@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { currentStoreChangedEvent } from '@/lib/store-events';
 
 type SaleItem = {
   quantity: number;
@@ -45,7 +46,8 @@ export default function SalesPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    void Promise.resolve().then(async () => {
+    async function loadSales() {
+      setIsLoading(true);
       try {
         const response = await fetch('/api/sales');
         const result: Sale[] | { error?: string } = await response.json();
@@ -62,7 +64,14 @@ export default function SalesPage() {
       } finally {
         setIsLoading(false);
       }
-    });
+    }
+
+    void Promise.resolve().then(() => loadSales());
+    window.addEventListener(currentStoreChangedEvent, loadSales);
+
+    return () => {
+      window.removeEventListener(currentStoreChangedEvent, loadSales);
+    };
   }, []);
 
   const filteredSales = useMemo(() => {

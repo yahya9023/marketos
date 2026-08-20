@@ -1,7 +1,7 @@
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Prisma, PrismaClient } from '@prisma/client';
 import { NextResponse } from 'next/server';
-import { authorizeApiRequest } from '@/lib/authorization';
+import { authorizeApiStoreRequest } from '@/lib/authorization';
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
@@ -23,6 +23,7 @@ const productSelect = {
   barcode: true,
   name: true,
   categoryId: true,
+  storeId: true,
   price: true,
   vatRate: true,
   unit: true,
@@ -49,7 +50,7 @@ const validUnits = new Set([
 ]);
 
 export async function GET(request: Request) {
-  const authorization = await authorizeApiRequest(['OWNER', 'MANAGER', 'CASHIER']);
+  const authorization = await authorizeApiStoreRequest(['OWNER', 'MANAGER', 'CASHIER']);
   if (authorization instanceof NextResponse) return authorization;
 
   const barcode = new URL(request.url).searchParams.get('barcode');
@@ -57,7 +58,11 @@ export async function GET(request: Request) {
   try {
     if (barcode) {
       const product = await prisma.product.findFirst({
-        where: { barcode, active: true },
+        where: {
+          barcode,
+          storeId: authorization.store.id,
+          active: true,
+        },
         select: productSelect,
       });
 
@@ -72,7 +77,7 @@ export async function GET(request: Request) {
     }
 
     const products = await prisma.product.findMany({
-      where: { active: true },
+      where: { storeId: authorization.store.id, active: true },
       select: productSelect,
       orderBy: { name: 'asc' },
     });
@@ -88,7 +93,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const authorization = await authorizeApiRequest(['OWNER', 'MANAGER']);
+  const authorization = await authorizeApiStoreRequest(['OWNER', 'MANAGER']);
   if (authorization instanceof NextResponse) return authorization;
 
   let body: unknown;
@@ -187,24 +192,13 @@ export async function POST(request: Request) {
       );
     }
 
-    const store = await prisma.store.findFirst({
-      orderBy: { createdAt: 'asc' },
-      select: { id: true },
-    });
-
-    if (!store) {
-      return NextResponse.json(
-        { error: 'No store found' },
-        { status: 404 },
-      );
-    }
-
     const createdProduct = await prisma.$transaction(async (transaction) =>
       transaction.product.create({
         data: {
           barcode: barcode.trim(),
           name: name.trim(),
           categoryId: category.id,
+          storeId: authorization.store.id,
           price,
           vatRate,
           unit: unit.trim(),
@@ -212,7 +206,7 @@ export async function POST(request: Request) {
           active: true,
           inventory: {
             create: {
-              store: { connect: { id: store.id } },
+              store: { connect: { id: authorization.store.id } },
               quantity: initialStock as number,
             },
           },
@@ -228,7 +222,7 @@ export async function POST(request: Request) {
       error.code === 'P2002'
     ) {
       return NextResponse.json(
-        { error: 'Product barcode already exists' },
+        { error: 'Product barcode already exists in this store' },
         { status: 409 },
       );
     }

@@ -1,7 +1,7 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { NextResponse } from 'next/server';
-import { authorizeApiRequest } from '@/lib/authorization';
+import { authorizeApiStoreRequest } from '@/lib/authorization';
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
@@ -23,6 +23,7 @@ const productSelect = {
   barcode: true,
   name: true,
   categoryId: true,
+  storeId: true,
   price: true,
   vatRate: true,
   unit: true,
@@ -52,7 +53,7 @@ export async function PATCH(
   request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
-  const authorization = await authorizeApiRequest(['OWNER', 'MANAGER']);
+  const authorization = await authorizeApiStoreRequest(['OWNER', 'MANAGER']);
   if (authorization instanceof NextResponse) return authorization;
 
   const { id } = await context.params;
@@ -143,6 +144,15 @@ export async function PATCH(
       );
     }
 
+    const existingProduct = await prisma.product.findFirst({
+      where: { id, storeId: authorization.store.id },
+      select: { id: true },
+    });
+
+    if (!existingProduct) {
+      return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+    }
+
     const product = await prisma.product.update({
       where: { id },
       data: {
@@ -164,7 +174,7 @@ export async function PATCH(
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       if (error.code === 'P2002') {
         return NextResponse.json(
-          { error: 'Product barcode already exists' },
+          { error: 'Product barcode already exists in this store' },
           { status: 400 },
         );
       }

@@ -27,12 +27,14 @@ model Store {
   id             String          @id @default(cuid())
   name           String
   address        String
+  active         Boolean         @default(true)
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   employees      Employee[]
   sales          Sale[]
   stockMovements StockMovement[]
   inventory      Inventory[]
+  products       Product[]
 }
 
 model Employee {
@@ -60,9 +62,10 @@ model Category {
 
 model Product {
   id             String          @id @default(cuid())
-  barcode        String          @unique
+  barcode        String
   name           String
   categoryId     String
+  storeId        String
   price          Decimal         @db.Decimal(10, 2)
   vatRate        Decimal         @db.Decimal(5, 2)
   unit           String
@@ -71,11 +74,14 @@ model Product {
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   category       Category        @relation(fields: [categoryId], references: [id])
+  store          Store           @relation(fields: [storeId], references: [id])
   saleItems      SaleItem[]
   stockMovements StockMovement[]
   inventory      Inventory[]
 
+  @@unique([storeId, barcode])
   @@index([categoryId])
+  @@index([storeId])
 }
 
 model Sale {

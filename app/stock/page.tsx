@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { currentStoreChangedEvent } from '@/lib/store-events';
 
 type Product = {
   id: string;
@@ -34,6 +35,7 @@ export default function StockPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function loadInventory() {
+    setIsLoading(true);
     setLoadError('');
 
     try {
@@ -72,6 +74,11 @@ export default function StockPage() {
 
   useEffect(() => {
     void Promise.resolve().then(() => loadInventory());
+    window.addEventListener(currentStoreChangedEvent, loadInventory);
+
+    return () => {
+      window.removeEventListener(currentStoreChangedEvent, loadInventory);
+    };
   }, []);
 
   const sortedProducts = useMemo(

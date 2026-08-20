@@ -1,7 +1,7 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { NextResponse } from 'next/server';
-import { authorizeApiRequest } from '@/lib/authorization';
+import { authorizeApiStoreRequest } from '@/lib/authorization';
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
@@ -41,7 +41,7 @@ const inventorySelect = {
 } as const;
 
 export async function POST(request: Request) {
-  const authorization = await authorizeApiRequest(['OWNER', 'MANAGER']);
+  const authorization = await authorizeApiStoreRequest(['OWNER', 'MANAGER']);
   if (authorization instanceof NextResponse) return authorization;
 
   let body: unknown;
@@ -81,20 +81,12 @@ export async function POST(request: Request) {
   }
 
   try {
-    const store = await prisma.store.findFirst({
-      orderBy: { createdAt: 'asc' },
-      select: { id: true },
-    });
-
-    if (!store) {
-      return NextResponse.json(
-        { error: 'No store found' },
-        { status: 404 },
-      );
-    }
-
     const product = await prisma.product.findFirst({
-      where: { id: productId.trim(), active: true },
+      where: {
+        id: productId.trim(),
+        storeId: authorization.store.id,
+        active: true,
+      },
       select: { id: true },
     });
 
@@ -109,13 +101,13 @@ export async function POST(request: Request) {
       transaction.inventory.upsert({
         where: {
           storeId_productId: {
-            storeId: store.id,
+            storeId: authorization.store.id,
             productId: product.id,
           },
         },
         update: { quantity: { increment: quantity as number } },
         create: {
-          storeId: store.id,
+          storeId: authorization.store.id,
           productId: product.id,
           quantity: quantity as number,
         },

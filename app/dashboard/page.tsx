@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { LogoutButton } from '@/components/auth/logout-button';
+import { currentStoreChangedEvent } from '@/lib/store-events';
 
 type SaleItem = {
   quantity: number;
@@ -62,7 +63,8 @@ export default function DashboardPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    void Promise.resolve().then(async () => {
+    async function loadDashboard() {
+      setIsLoading(true);
       try {
         const [salesResponse, productsResponse, inventoryResponse] =
           await Promise.all([
@@ -93,7 +95,14 @@ export default function DashboardPage() {
       } finally {
         setIsLoading(false);
       }
-    });
+    }
+
+    void Promise.resolve().then(() => loadDashboard());
+    window.addEventListener(currentStoreChangedEvent, loadDashboard);
+
+    return () => {
+      window.removeEventListener(currentStoreChangedEvent, loadDashboard);
+    };
   }, []);
 
   const todaySales = useMemo(

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { currentStoreChangedEvent } from '@/lib/store-events';
 
 type Product = {
   id: string;
@@ -67,6 +68,7 @@ export default function PosPage() {
     let isMounted = true;
 
     async function loadProducts() {
+      setIsLoading(true);
       try {
         const [productsResponse, inventoryResponse] = await Promise.all([
           fetch('/api/products'),
@@ -107,9 +109,11 @@ export default function PosPage() {
     }
 
     loadProducts();
+    window.addEventListener(currentStoreChangedEvent, loadProducts);
 
     return () => {
       isMounted = false;
+      window.removeEventListener(currentStoreChangedEvent, loadProducts);
     };
   }, []);
 

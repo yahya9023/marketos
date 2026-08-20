@@ -2,6 +2,7 @@ import { Prisma, PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { NextResponse } from 'next/server';
 import { authorizeApiRequest } from '@/lib/authorization';
+import { getCurrentStoreContext } from '@/lib/stores';
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
@@ -22,6 +23,7 @@ const storeSelect = {
   id: true,
   name: true,
   address: true,
+  active: true,
   createdAt: true,
   updatedAt: true,
 } as const;
@@ -35,19 +37,26 @@ export async function GET() {
   if (authorization instanceof NextResponse) return authorization;
 
   try {
-    const store = await prisma.store.findFirst({
-      orderBy: { createdAt: 'asc' },
-      select: storeSelect,
-    });
+    const { store, stores: activeStores } = await getCurrentStoreContext(authorization);
+    const stores = authorization.role === 'OWNER'
+      ? await prisma.store.findMany({
+          select: storeSelect,
+          orderBy: { createdAt: 'asc' },
+        })
+      : activeStores;
 
-    if (!store) {
+    if (!store && authorization.role !== 'OWNER') {
       return NextResponse.json(
         { error: 'No store found' },
         { status: 404 },
       );
     }
 
-    return NextResponse.json(withCurrency(store, 'EUR'));
+    return NextResponse.json({
+      ...(store ? withCurrency(store, 'EUR') : {}),
+      stores: stores.map((item) => withCurrency(item, 'EUR')),
+      currentStoreId: store?.id ?? null,
+    });
   } catch {
     return NextResponse.json(
       { error: 'Unable to fetch store' },
@@ -106,12 +115,13 @@ export async function POST(request: Request) {
 
   try {
     const existingStore = await prisma.store.findFirst({
+      where: { name: { equals: name.trim(), mode: 'insensitive' } },
       select: { id: true },
     });
 
     if (existingStore) {
       return NextResponse.json(
-        { error: 'A store already exists' },
+        { error: 'A store with that name already exists' },
         { status: 409 },
       );
     }
@@ -120,6 +130,7 @@ export async function POST(request: Request) {
       data: {
         name: name.trim(),
         address: address.trim(),
+        active: true,
       },
       select: storeSelect,
     });

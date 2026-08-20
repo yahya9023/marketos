@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { currentStoreChangedEvent } from '@/lib/store-events';
 
 type Product = {
   id: string;
@@ -75,6 +76,7 @@ export default function AdminProductsPage() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   async function loadData() {
+    setIsLoading(true);
     setLoadError('');
 
     try {
@@ -112,6 +114,11 @@ export default function AdminProductsPage() {
 
   useEffect(() => {
     void Promise.resolve().then(() => loadData());
+    window.addEventListener(currentStoreChangedEvent, loadData);
+
+    return () => {
+      window.removeEventListener(currentStoreChangedEvent, loadData);
+    };
   }, []);
 
   const filteredProducts = useMemo(() => {

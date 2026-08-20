@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { redirect } from 'next/navigation';
 import { getCurrentEmployee, type UserRole } from '@/lib/auth';
+import { getCurrentStoreForEmployee } from '@/lib/stores';
 
 export async function requirePageRole(allowedRoles: UserRole[]) {
   const employee = await getCurrentEmployee();
@@ -23,4 +24,16 @@ export async function authorizeApiRequest(requiredRoles: UserRole[]) {
   }
 
   return employee;
+}
+
+export async function authorizeApiStoreRequest(requiredRoles: UserRole[]) {
+  const authorization = await authorizeApiRequest(requiredRoles);
+  if (authorization instanceof NextResponse) return authorization;
+
+  const store = await getCurrentStoreForEmployee(authorization);
+  if (!store) {
+    return NextResponse.json({ error: 'No accessible store found' }, { status: 404 });
+  }
+
+  return { employee: authorization, store };
 }

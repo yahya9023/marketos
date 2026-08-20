@@ -1,7 +1,7 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { NextResponse } from 'next/server';
-import { authorizeApiRequest } from '@/lib/authorization';
+import { authorizeApiStoreRequest } from '@/lib/authorization';
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
@@ -55,25 +55,13 @@ const salesHistorySelect = {
 } as const;
 
 export async function GET() {
-  const authorization = await authorizeApiRequest(['OWNER', 'MANAGER']);
+  const authorization = await authorizeApiStoreRequest(['OWNER', 'MANAGER']);
   if (authorization instanceof NextResponse) return authorization;
 
   try {
-    const store = await prisma.store.findFirst({
-      orderBy: { createdAt: 'asc' },
-      select: { id: true },
-    });
-
-    if (!store) {
-      return NextResponse.json(
-        { error: 'No store found' },
-        { status: 404 },
-      );
-    }
-
     const sales = await prisma.sale.findMany({
       where: {
-        storeId: store.id,
+        storeId: authorization.store.id,
         status: 'COMPLETED',
       },
       orderBy: { createdAt: 'desc' },
@@ -126,7 +114,7 @@ function parseSaleItems(items: unknown) {
 }
 
 export async function POST(request: Request) {
-  const authorization = await authorizeApiRequest(['OWNER', 'MANAGER', 'CASHIER']);
+  const authorization = await authorizeApiStoreRequest(['OWNER', 'MANAGER', 'CASHIER']);
   if (authorization instanceof NextResponse) return authorization;
 
   let body: unknown;
@@ -163,34 +151,10 @@ export async function POST(request: Request) {
   }
 
   try {
-    const store = await prisma.store.findFirst({
-      orderBy: { createdAt: 'asc' },
-      select: { id: true },
-    });
-
-    if (!store) {
-      return NextResponse.json(
-        { error: 'No store found' },
-        { status: 404 },
-      );
-    }
-
-    const employee = await prisma.employee.findFirst({
-      where: { storeId: store.id },
-      orderBy: { createdAt: 'asc' },
-      select: { id: true },
-    });
-
-    if (!employee) {
-      return NextResponse.json(
-        { error: 'No employee found for the current store' },
-        { status: 404 },
-      );
-    }
-
     const products = await prisma.product.findMany({
       where: {
         id: { in: parsedItems.items.map((item) => item.productId) },
+        storeId: authorization.store.id,
         active: true,
       },
       select: {
@@ -199,7 +163,7 @@ export async function POST(request: Request) {
         price: true,
         vatRate: true,
         inventory: {
-          where: { storeId: store.id },
+          where: { storeId: authorization.store.id },
           select: { quantity: true },
         },
       },
@@ -277,8 +241,8 @@ export async function POST(request: Request) {
     const sale = await prisma.$transaction(async (transaction) => {
       const createdSale = await transaction.sale.create({
         data: {
-          storeId: store.id,
-          employeeId: employee.id,
+          storeId: authorization.store.id,
+          employeeId: authorization.employee.id,
           subtotal,
           vat,
           total,
@@ -315,7 +279,7 @@ export async function POST(request: Request) {
       for (const [productId, requestedQuantity] of requestedQuantities) {
         const inventoryUpdate = await transaction.inventory.updateMany({
           where: {
-            storeId: store.id,
+            storeId: authorization.store.id,
             productId,
             quantity: { gte: requestedQuantity },
           },
@@ -333,7 +297,7 @@ export async function POST(request: Request) {
         await transaction.stockMovement.create({
           data: {
             productId,
-            storeId: store.id,
+            storeId: authorization.store.id,
             quantity: -requestedQuantity,
             type: 'OUT',
             reason: `Sale ${createdSale.id}`,
