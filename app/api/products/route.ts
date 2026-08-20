@@ -81,13 +81,17 @@ export async function GET(request: Request) {
     }
 
     const catalog = new URL(request.url).searchParams.get('catalog');
+    const assignmentFilter =
+      catalog === 'unassigned'
+        ? { none: { storeId: authorization.store.id, active: true } }
+        : catalog === 'assigned' || (catalog === 'all' && authorization.employee.role === 'CASHIER')
+          ? { some: { storeId: authorization.store.id, active: true } }
+          : undefined;
     const products = await prisma.product.findMany({
       where: {
         ownerId: authorization.store.ownerId,
         active: true,
-        ...(catalog === 'all'
-          ? {}
-          : { storeProducts: { some: { storeId: authorization.store.id, active: true } } }),
+        ...(assignmentFilter ? { storeProducts: assignmentFilter } : {}),
       },
       select: productSelect,
       orderBy: { name: 'asc' },

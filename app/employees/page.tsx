@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useI18n } from '@/components/i18n/provider';
 
 type Role = 'OWNER' | 'MANAGER' | 'CASHIER';
 
@@ -47,6 +48,7 @@ function formatDate(value: string) {
 }
 
 export default function EmployeesPage() {
+  const { t } = useI18n();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [stores, setStores] = useState<Store[]>([]);
   const [form, setForm] = useState<EmployeeForm>(emptyForm);
@@ -192,7 +194,7 @@ export default function EmployeesPage() {
           <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
             <div>
               <p className="mb-1 text-xs font-bold uppercase tracking-[0.2em] text-[#4f6b65]">Access control</p>
-              <h1 className="text-3xl font-black tracking-tight text-[#0c1b2a] sm:text-4xl">Employees</h1>
+              <h1 className="text-3xl font-black tracking-tight text-[#0c1b2a] sm:text-4xl">{t('Employees')}</h1>
             </div>
             <span className="text-sm font-semibold text-[#5f746d]">{employees.length} employees</span>
           </div>

@@ -3,6 +3,9 @@ import { getCurrentEmployee } from '@/lib/auth';
 import { getCurrentStoreContext } from '@/lib/stores';
 import { LogoutButton } from '@/components/auth/logout-button';
 import { StoreSelector } from '@/components/navigation/store-selector';
+import { LanguageSelector } from '@/components/navigation/language-selector';
+import { cookies } from 'next/headers';
+import { getDictionary, isLanguage, languageCookie } from '@/lib/i18n';
 
 const links = [
   { href: '/dashboard', label: 'Dashboard', roles: ['OWNER', 'MANAGER'] },
@@ -20,6 +23,9 @@ export async function AuthenticatedShell({ children }: { children: React.ReactNo
   if (!employee) return children;
 
   const { stores, store } = await getCurrentStoreContext(employee);
+  const languageValue = (await cookies()).get(languageCookie)?.value;
+  const language = isLanguage(languageValue) ? languageValue : 'es';
+  const dictionary = getDictionary(language);
   const visibleLinks = links.filter((link) => link.roles.some((role) => role === employee.role));
 
   return (
@@ -31,10 +37,11 @@ export async function AuthenticatedShell({ children }: { children: React.ReactNo
             <span className="font-bold tracking-tight">MarketOS</span>
           </Link>
           <nav className="order-3 flex min-w-0 max-w-full flex-1 gap-1 overflow-x-auto pb-1 sm:order-2 sm:ml-3 sm:pb-0">
-            {visibleLinks.map((link) => <Link key={link.href} href={link.href} className="shrink-0 rounded-lg px-3 py-2 text-sm font-bold text-slate-300 hover:bg-white/10 hover:text-white">{link.label}</Link>)}
+            {visibleLinks.map((link) => <Link key={link.href} href={link.href} className="shrink-0 rounded-lg px-3 py-2 text-sm font-bold text-slate-300 hover:bg-white/10 hover:text-white">{dictionary[link.label] ?? link.label}</Link>)}
           </nav>
           <div className="ml-auto flex shrink-0 items-center gap-3 sm:order-3">
             {store && <StoreSelector stores={stores} selectedStoreId={store.id} canSwitch={employee.role === 'OWNER'} />}
+            <LanguageSelector language={language} />
             <LogoutButton />
           </div>
         </div>

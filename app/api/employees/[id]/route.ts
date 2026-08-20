@@ -102,7 +102,11 @@ export async function PATCH(
 
       if (removesActiveOwner) {
         const activeOwnerCount = await transaction.employee.count({
-          where: { role: 'OWNER', active: true },
+          where: {
+            role: 'OWNER',
+            active: true,
+            store: { ownerId: authorization.id },
+          },
         });
         if (activeOwnerCount <= 1) {
           throw new Error('At least one active OWNER must remain');

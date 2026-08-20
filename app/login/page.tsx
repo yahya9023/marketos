@@ -3,8 +3,10 @@
 import { FormEvent, useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { useI18n } from '@/components/i18n/provider';
 
 export default function LoginPage() {
+  const { t } = useI18n();
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -23,7 +25,7 @@ export default function LoginPage() {
     });
 
     if (result?.error) {
-      setError('Invalid email or password.');
+      setError(t('Invalid email or password.'));
       setIsSubmitting(false);
       return;
     }
@@ -46,8 +48,8 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <h1 className="text-3xl font-black tracking-tight text-[#0c1b2a]">Welcome back</h1>
-        <p className="mt-2 text-sm font-medium text-[#5f746d]">Sign in to continue to MarketOS.</p>
+        <h1 className="text-3xl font-black tracking-tight text-[#0c1b2a]">{t('Welcome back')}</h1>
+        <p className="mt-2 text-sm font-medium text-[#5f746d]">{t('Sign in to continue to MarketOS.')}</p>
 
         {error && (
           <p role="alert" className="mt-5 rounded-lg bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700">
@@ -57,7 +59,7 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <label className="block text-sm font-bold text-[#4f6b65]">
-            Email
+            {t('Email')}
             <input
               required
               type="email"
@@ -68,7 +70,7 @@ export default function LoginPage() {
             />
           </label>
           <label className="block text-sm font-bold text-[#4f6b65]">
-            Password
+            {t('Password')}
             <input
               required
               type="password"
@@ -83,7 +85,7 @@ export default function LoginPage() {
             disabled={isSubmitting}
             className="h-12 w-full rounded-lg bg-[#0c1b2a] text-sm font-black text-white transition hover:bg-[#1c354c] disabled:cursor-wait disabled:opacity-60"
           >
-            {isSubmitting ? 'Signing in...' : 'Sign in'}
+            {isSubmitting ? t('Signing in...') : t('Sign in')}
           </button>
         </form>
       </section>

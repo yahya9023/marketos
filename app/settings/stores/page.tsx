@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useI18n } from '@/components/i18n/provider';
 
 type Store = {
   id: string;
@@ -25,6 +26,7 @@ function formatDate(value: string) {
 }
 
 export default function StoreManagementPage() {
+  const { t } = useI18n();
   const router = useRouter();
   const [stores, setStores] = useState<Store[]>([]);
   const [form, setForm] = useState<StoreForm>(emptyForm);
@@ -123,7 +125,7 @@ export default function StoreManagementPage() {
           <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
             <div>
               <p className="mb-1 text-xs font-bold uppercase tracking-[0.2em] text-[#4f6b65]">Store operations</p>
-              <h1 className="text-3xl font-black tracking-tight text-[#0c1b2a] sm:text-4xl">Stores</h1>
+              <h1 className="text-3xl font-black tracking-tight text-[#0c1b2a] sm:text-4xl">{t('Stores')}</h1>
             </div>
             <button type="button" onClick={openCreateModal} className="rounded-lg bg-[#0c1b2a] px-4 py-3 text-sm font-black text-white transition hover:bg-[#1c354c]">+ Add Store</button>
           </div>

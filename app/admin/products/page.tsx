@@ -1,8 +1,9 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { currentStoreChangedEvent } from '@/lib/store-events';
+import { useI18n } from '@/components/i18n/provider';
 
 type Product = {
   id: string;
@@ -38,6 +39,8 @@ type ProductForm = {
   initialStock: string;
 };
 
+type CatalogFilter = 'all' | 'assigned' | 'unassigned';
+
 const emptyForm: ProductForm = {
   name: '',
   barcode: '',
@@ -61,11 +64,13 @@ function formatPrice(price: number | string) {
 }
 
 export default function AdminProductsPage() {
+  const { t } = useI18n();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [inventory, setInventory] = useState<InventoryRecord[]>([]);
   const [currentStoreId, setCurrentStoreId] = useState('');
   const [search, setSearch] = useState('');
+  const [catalogFilter, setCatalogFilter] = useState<CatalogFilter>('all');
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -77,14 +82,14 @@ export default function AdminProductsPage() {
   const [imagePreview, setImagePreview] = useState('');
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
-  async function loadData() {
+  const loadData = useCallback(async () => {
     setIsLoading(true);
     setLoadError('');
 
     try {
       const [productsResponse, categoriesResponse, inventoryResponse, storeResponse] =
         await Promise.all([
-          fetch('/api/products?catalog=all'),
+          fetch(`/api/products?catalog=${catalogFilter}`),
           fetch('/api/categories'),
           fetch('/api/inventory'),
           fetch('/api/store'),
@@ -117,7 +122,7 @@ export default function AdminProductsPage() {
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [catalogFilter]);
 
   useEffect(() => {
     void Promise.resolve().then(() => loadData());
@@ -126,7 +131,7 @@ export default function AdminProductsPage() {
     return () => {
       window.removeEventListener(currentStoreChangedEvent, loadData);
     };
-  }, []);
+  }, [loadData]);
 
   const filteredProducts = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -356,10 +361,10 @@ export default function AdminProductsPage() {
           <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
             <div>
               <p className="mb-1 text-xs font-bold uppercase tracking-[0.2em] text-[#4f6b65]">
-                Catalog control
+                {t('Catalog control')}
               </p>
               <h1 className="text-3xl font-black tracking-tight text-[#0c1b2a] sm:text-4xl">
-                Products
+                {t('Products')}
               </h1>
             </div>
             <div className="text-sm font-semibold text-[#5f746d]">
@@ -375,9 +380,22 @@ export default function AdminProductsPage() {
               id="product-search"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search by name or barcode"
+              placeholder={t('Search by name or barcode')}
               className="h-12 min-w-0 flex-1 rounded-xl border-2 border-[#d6e0d9] bg-white px-4 text-sm font-semibold text-[#0c1b2a] outline-none transition focus:border-[#8caa4d] focus:ring-4 focus:ring-[#dce9a8]"
             />
+            <label htmlFor="catalog-filter" className="flex h-12 items-center gap-2 rounded-xl border-2 border-[#d6e0d9] bg-white px-3 text-sm font-bold text-[#4f6b65]">
+              <span className="hidden sm:inline">{t('Products:')}</span>
+              <select
+                id="catalog-filter"
+                value={catalogFilter}
+                onChange={(event) => setCatalogFilter(event.target.value as CatalogFilter)}
+                className="min-w-0 bg-transparent font-bold text-[#0c1b2a] outline-none"
+              >
+                <option value="all">{t('All products')}</option>
+                <option value="assigned">{t('Assigned to this store')}</option>
+                <option value="unassigned">{t('Not assigned to this store')}</option>
+              </select>
+            </label>
           </div>
 
           {successMessage && (

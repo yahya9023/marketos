@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { currentStoreChangedEvent } from '@/lib/store-events';
+import { useI18n } from '@/components/i18n/provider';
 
 type Store = { id: string; name: string };
 
@@ -11,6 +12,7 @@ export function StoreSelector({ stores, selectedStoreId, canSwitch }: {
   selectedStoreId: string;
   canSwitch: boolean;
 }) {
+  const { t } = useI18n();
   const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
 
@@ -32,12 +34,12 @@ export function StoreSelector({ stores, selectedStoreId, canSwitch }: {
   }
 
   if (!canSwitch || stores.length <= 1) {
-    return <span className="text-sm font-semibold text-slate-300">Store: {stores.find((store) => store.id === selectedStoreId)?.name ?? 'Unavailable'}</span>;
+    return <span className="text-sm font-semibold text-slate-300">{t('Store')}: {stores.find((store) => store.id === selectedStoreId)?.name ?? t('Unavailable')}</span>;
   }
 
   return (
     <label className="flex items-center gap-2 text-sm font-semibold text-slate-300">
-      <span className="hidden sm:inline">Current store:</span>
+      <span className="hidden sm:inline">{t('Current store:')}</span>
       <select value={selectedStoreId} disabled={isSaving} onChange={(event) => void changeStore(event.target.value)} className="max-w-[10rem] rounded-lg border border-white/20 bg-white/10 px-2 py-2 text-sm font-bold text-white outline-none">
         {stores.map((store) => <option key={store.id} value={store.id} className="text-[#0c1b2a]">{store.name}</option>)}
       </select>

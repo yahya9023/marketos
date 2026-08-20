@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { LogoutButton } from '@/components/auth/logout-button';
 import { currentStoreChangedEvent } from '@/lib/store-events';
+import { useI18n } from '@/components/i18n/provider';
 
 type SaleItem = {
   quantity: number;
@@ -56,6 +57,7 @@ function formatTime(value: string) {
 }
 
 export default function DashboardPage() {
+  const { t } = useI18n();
   const [sales, setSales] = useState<Sale[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [inventory, setInventory] = useState<InventoryRecord[]>([]);
@@ -155,34 +157,34 @@ export default function DashboardPage() {
 
         <section className="rounded-2xl bg-[#f5f7f2] p-5 shadow-2xl shadow-black/10 sm:p-7">
           <div className="mb-6">
-            <p className="mb-1 text-xs font-bold uppercase tracking-[0.2em] text-[#4f6b65]">Daily operations</p>
-            <h1 className="text-3xl font-black tracking-tight text-[#0c1b2a] sm:text-4xl">Dashboard</h1>
+            <p className="mb-1 text-xs font-bold uppercase tracking-[0.2em] text-[#4f6b65]">{t('Daily operations')}</p>
+            <h1 className="text-3xl font-black tracking-tight text-[#0c1b2a] sm:text-4xl">{t('DashboardTitle')}</h1>
           </div>
 
           {error && <p className="mb-5 rounded-lg bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700">{error}</p>}
 
           {isLoading ? (
-            <p className="rounded-xl border border-dashed border-[#b8c9bd] px-4 py-12 text-center text-sm font-semibold text-[#5f746d]">Loading dashboard...</p>
+            <p className="rounded-xl border border-dashed border-[#b8c9bd] px-4 py-12 text-center text-sm font-semibold text-[#5f746d]">{t('Loading dashboard...')}</p>
           ) : (
             <>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <article className="rounded-xl bg-white p-5">
-                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#7a8c84]">Today&apos;s sales</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#7a8c84]">{t("Today's sales")}</p>
                   <p className="mt-3 text-3xl font-black text-[#0c1b2a]">{formatMoney(todayTotal)}</p>
                   <p className="mt-1 text-sm font-semibold text-[#5f746d]">{todaySales.length} completed sales</p>
                 </article>
                 <article className="rounded-xl bg-white p-5">
-                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#7a8c84]">CASH today</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#7a8c84]">{t('CASH today')}</p>
                   <p className="mt-3 text-3xl font-black text-[#346154]">{formatMoney(cashTotal)}</p>
                 </article>
                 <article className="rounded-xl bg-white p-5">
-                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#7a8c84]">CARD today</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#7a8c84]">{t('CARD today')}</p>
                   <p className="mt-3 text-3xl font-black text-[#346154]">{formatMoney(cardTotal)}</p>
                 </article>
                 <article className="rounded-xl bg-white p-5">
-                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#7a8c84]">Products / stock</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#7a8c84]">{t('Products / stock')}</p>
                   <p className="mt-3 text-3xl font-black text-[#0c1b2a]">{products.length}</p>
-                  <p className="mt-1 text-sm font-semibold text-[#5f746d]">{outOfStockCount} at zero stock</p>
+                  <p className="mt-1 text-sm font-semibold text-[#5f746d]">{outOfStockCount} {t('at zero stock')}</p>
                   {zeroStockProducts.length > 0 && (
                     <div className="mt-3 space-y-1 border-t border-[#edf1ed] pt-3">
                       {zeroStockProducts.map((product) => (
@@ -202,13 +204,13 @@ export default function DashboardPage() {
               <div className="mt-6 rounded-xl bg-white p-5">
                 <div className="mb-4 flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#7a8c84]">Latest activity</p>
-                    <h2 className="mt-1 text-xl font-black text-[#0c1b2a]">Recent sales</h2>
+                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#7a8c84]">{t('Latest activity')}</p>
+                    <h2 className="mt-1 text-xl font-black text-[#0c1b2a]">{t('Recent sales')}</h2>
                   </div>
-                  <Link href="/sales" className="text-sm font-bold text-[#346154] hover:text-[#0c1b2a]">View all</Link>
+                  <Link href="/sales" className="text-sm font-bold text-[#346154] hover:text-[#0c1b2a]">{t('View all')}</Link>
                 </div>
                 {sales.length === 0 ? (
-                  <p className="rounded-lg border border-dashed border-[#b8c9bd] px-4 py-8 text-center text-sm font-semibold text-[#5f746d]">No completed sales yet.</p>
+                  <p className="rounded-lg border border-dashed border-[#b8c9bd] px-4 py-8 text-center text-sm font-semibold text-[#5f746d]">{t('No completed sales yet.')}</p>
                 ) : (
                   <div className="divide-y divide-[#edf1ed]">
                     {sales.slice(0, 5).map((sale) => (

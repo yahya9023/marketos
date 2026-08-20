@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { currentStoreChangedEvent } from '@/lib/store-events';
+import { useI18n } from '@/components/i18n/provider';
 
 type Product = {
   id: string;
@@ -53,6 +54,7 @@ type InventoryResponse = {
 };
 
 export default function PosPage() {
+  const { t } = useI18n();
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [barcode, setBarcode] = useState('');
@@ -141,7 +143,7 @@ export default function PosPage() {
 
   function addProduct(product: Product) {
     if (product.databaseStock < 1) {
-      setNotice('This product is out of stock.');
+      setNotice(t('This product is out of stock.'));
       return;
     }
 
@@ -165,7 +167,7 @@ export default function PosPage() {
     });
     setBarcode('');
     barcodeInputRef.current?.focus();
-    setNotice(`${product.name} added to cart`);
+    setNotice(t('addedToCart', { name: product.name }));
     setPaymentMessage('');
   }
 
@@ -173,7 +175,7 @@ export default function PosPage() {
     event.preventDefault();
     const query = barcode.trim().toLowerCase();
     if (!query) {
-      setNotice('Enter a barcode or product name');
+      setNotice(t('Enter a barcode or product name'));
       setBarcode('');
       barcodeInputRef.current?.focus();
       return;
@@ -190,7 +192,7 @@ export default function PosPage() {
 
     setBarcode('');
     barcodeInputRef.current?.focus();
-    setNotice('No product found');
+    setNotice(t('No product found'));
   }
 
   function changeQuantity(barcodeValue: string, amount: number) {
@@ -232,13 +234,13 @@ export default function PosPage() {
     setCart((currentCart) =>
       currentCart.filter((item) => item.barcode !== barcodeValue),
     );
-    setNotice('Item removed from cart');
+    setNotice(t('Item removed from cart'));
     setPaymentMessage('');
   }
 
   function clearCart() {
     setCart([]);
-    setNotice('Cart cleared');
+    setNotice(t('Cart cleared'));
     setPaymentMessage('');
   }
 
@@ -246,13 +248,13 @@ export default function PosPage() {
     if (isCheckoutLoading) return;
 
     if (cart.length === 0) {
-      setPaymentMessage('Add an item before checkout');
+      setPaymentMessage(t('Add an item before checkout'));
       return;
     }
 
     setIsCheckoutLoading(true);
   setPaymentMethod(selectedPaymentMethod);
-  setPaymentMessage(`Processing ${selectedPaymentMethod.toLowerCase()} payment...`);
+  setPaymentMessage(t('processingPayment', { method: selectedPaymentMethod.toLowerCase() }));
 
     try {
       const response = await fetch('/api/sales', {
@@ -273,7 +275,7 @@ export default function PosPage() {
       }
 
       setCart([]);
-      setNotice('Sale completed successfully');
+      setNotice(t('Sale completed successfully'));
       setPaymentMessage(
         `${selectedPaymentMethod} payment completed`,
       );
@@ -354,10 +356,10 @@ export default function PosPage() {
             <div className="mb-1 flex items-end justify-between gap-3 lg:mb-6 lg:gap-4">
               <div>
                 <p className="mb-1 text-xs font-bold uppercase tracking-[0.2em] text-[#4f6b65]">
-                  Item lookup
+                  {t('Item lookup')}
                 </p>
                 <h1 className="text-xl font-black tracking-tight text-[#0c1b2a] lg:text-4xl">
-                  Scan products
+                  {t('Scan products')}
                 </h1>
               </div>
               <div className="hidden rounded-full bg-[#e4eee7] px-3 py-1.5 text-xs font-bold text-[#346154] lg:block">
@@ -367,7 +369,7 @@ export default function PosPage() {
 
             <form onSubmit={handleBarcodeSubmit} className="relative mb-2 lg:mb-3">
               <label htmlFor="barcode" className="mb-2 block text-sm font-bold text-[#4f6b65]">
-                Scan or enter barcode
+                {t('Scan or enter barcode')}
               </label>
               <div className="pointer-events-none absolute bottom-0 left-5 top-9 flex items-center text-[#3c665d]">
                 <span className="text-2xl leading-none">|||</span>
@@ -377,7 +379,7 @@ export default function PosPage() {
                 ref={barcodeInputRef}
                 value={barcode}
                 onChange={(event) => setBarcode(event.target.value)}
-                placeholder="Scan barcode or type product name"
+                placeholder={t('Scan barcode or type product name')}
                 autoFocus
                 className="h-10 w-full rounded-xl border-2 border-[#d6e0d9] bg-white pl-16 pr-28 text-base font-semibold text-[#0c1b2a] outline-none transition focus:border-[#8caa4d] focus:ring-4 focus:ring-[#dce9a8] lg:h-16 lg:text-lg"
               />
@@ -385,7 +387,7 @@ export default function PosPage() {
                 type="submit"
                 className="absolute right-2 top-9 h-12 rounded-lg bg-[#0c1b2a] px-5 text-sm font-bold text-white transition hover:bg-[#1c354c] active:scale-[0.98]"
               >
-                Add item
+                {t('Add item')}
               </button>
             </form>
             <p className="mb-1 min-h-5 text-sm font-medium text-[#5f746d] lg:mb-6">
@@ -394,7 +396,7 @@ export default function PosPage() {
 
             <div className="mb-1 flex items-center justify-between lg:mb-3">
               <h2 className="text-sm font-bold uppercase tracking-[0.16em] text-[#4f6b65]">
-                Quick add
+                {t('Quick add')}
               </h2>
               <span className="text-xs font-medium text-slate-500">
                 {filteredProducts.length} products
@@ -404,7 +406,7 @@ export default function PosPage() {
               <div className="grid min-w-0 content-start grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {isLoading ? (
                 <p className="col-span-full text-sm font-medium text-[#5f746d]">
-                  Loading products...
+                  {t('Loading products...')}
                 </p>
               ) : loadError ? (
                 <p className="col-span-full text-sm font-medium text-rose-600">
@@ -440,7 +442,7 @@ export default function PosPage() {
                       {product.unit}
                     </span>
                     <span className={`mt-2 inline-flex rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-[0.08em] lg:mt-3 ${product.databaseStock < 1 ? 'bg-rose-100 text-rose-700' : 'bg-[#e4eee7] text-[#346154]'}`}>
-                      {product.databaseStock < 1 ? 'OUT OF STOCK' : `Stock: ${product.databaseStock}`}
+                      {product.databaseStock < 1 ? t('OUT OF STOCK') : `${t('Stock')}: ${product.databaseStock}`}
                     </span>
                     <span className="mt-2 block text-base font-black text-[#346154]">
                       {currency.format(product.price)}
@@ -452,8 +454,8 @@ export default function PosPage() {
             </div>
 
             <div className="mt-3 hidden shrink-0 items-center justify-between border-t border-[#dce5df] pt-3 text-xs text-[#5f746d] lg:mt-6 lg:flex lg:pt-4">
-              <span>Scanner ready</span>
-              <span className="font-semibold">Last sync: just now</span>
+              <span>{t('Scanner ready')}</span>
+              <span className="font-semibold">{t('Last sync: just now')}</span>
             </div>
           </section>
 
@@ -461,10 +463,10 @@ export default function PosPage() {
             <div className="mb-1 flex items-start justify-between gap-3 border-b border-slate-200 pb-1 lg:mb-5 lg:pb-5">
               <div>
                 <p className="mb-1 text-xs font-bold uppercase tracking-[0.2em] text-[#7a8c84]">
-                  Current sale
+                  {t('Current sale')}
                 </p>
                 <h2 className="text-xl font-black tracking-tight text-[#0c1b2a] lg:text-3xl">
-                  Shopping cart
+                  {t('Shopping cart')}
                 </h2>
               </div>
               <button
@@ -472,20 +474,20 @@ export default function PosPage() {
                 onClick={clearCart}
                 className="rounded-lg border border-rose-200 px-3 py-2 text-xs font-bold text-rose-600 transition hover:bg-rose-50 active:scale-[0.98]"
               >
-                Clear cart
+                {t('Clear cart')}
               </button>
             </div>
 
             <div className="min-h-0 flex-1 overflow-y-auto pr-1">
               {cart.length === 0 ? (
                 <div className="flex h-full min-h-24 items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-center text-sm font-medium text-slate-500 lg:min-h-48 lg:p-6">
-                  Cart is empty. Scan an item to begin.
+                  {t('Cart is empty. Scan an item to begin.')}
                 </div>
               ) : (
                 <div className="space-y-2">
                   <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 px-3 text-[11px] font-bold uppercase tracking-[0.15em] text-slate-400 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
-                    <span>Product</span>
-                    <span>Qty</span>
+                    <span>{t('Product')}</span>
+                    <span>{t('Qty')}</span>
                     <span className="col-start-2 row-start-2 sm:col-auto sm:row-auto">
                       Total
                     </span>
@@ -503,14 +505,14 @@ export default function PosPage() {
                           {currency.format(item.price)} / {item.unit}
                         </p>
                         <p className={`mt-1 text-xs font-semibold ${item.databaseStock - item.quantity === 0 ? 'text-rose-600' : 'text-[#346154]'}`}>
-                          Available stock: {item.databaseStock - item.quantity}
+                          {t('availableStock', { count: item.databaseStock - item.quantity })}
                         </p>
                         <button
                           type="button"
                           onClick={() => removeItem(item.barcode)}
                           className="mt-2 text-xs font-bold text-rose-600 hover:text-rose-700"
                         >
-                          Remove
+                          {t('Remove')}
                         </button>
                       </div>
                       <div className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-1">
@@ -559,20 +561,20 @@ export default function PosPage() {
             <div className="mt-1 shrink-0 border-t border-slate-200 pt-1 lg:mt-5 lg:pt-5">
               <div className="space-y-1 text-sm lg:space-y-2">
                 <div className="flex justify-between text-slate-500">
-                  <span>Subtotal</span>
+                  <span>{t('Subtotal')}</span>
                   <span className="font-semibold text-slate-700">
                     {currency.format(subtotal)}
                   </span>
                 </div>
                 <div className="flex justify-between text-slate-500">
-                  <span>VAT</span>
+                  <span>{t('VAT')}</span>
                   <span className="font-semibold text-slate-700">
                     {currency.format(vat)}
                   </span>
                 </div>
                 <div className="mt-1 flex items-end justify-between border-t border-dashed border-slate-200 pt-1 lg:mt-4 lg:pt-4">
                   <span className="text-sm font-bold uppercase tracking-[0.15em] text-[#4f6b65]">
-                    Grand total
+                    {t('Grand total')}
                   </span>
                   <span className="text-xl font-black tracking-tight text-[#0c1b2a] lg:text-4xl">
                     {currency.format(grandTotal)}
@@ -587,10 +589,10 @@ export default function PosPage() {
                   disabled={isCheckoutLoading}
                   className="flex min-h-12 flex-col items-center justify-center rounded-xl bg-[#e1f25b] text-[#0c1b2a] transition hover:bg-[#d4e94e] active:scale-[0.98] lg:min-h-20"
                 >
-                  <span className="text-lg font-black">CASH</span>
+                  <span className="text-lg font-black">{t('CASH')}</span>
                   <span className="mt-1 text-xs font-semibold opacity-70">
                     {isCheckoutLoading && paymentMethod === 'CASH'
-                      ? 'Processing...'
+                      ? t('Processing...')
                       : 'Pay with cash'}
                   </span>
                 </button>
@@ -600,10 +602,10 @@ export default function PosPage() {
                   disabled={isCheckoutLoading}
                   className="flex min-h-12 flex-col items-center justify-center rounded-xl bg-[#0c1b2a] text-white transition hover:bg-[#1c354c] active:scale-[0.98] lg:min-h-20"
                 >
-                  <span className="text-lg font-black">CARD</span>
+                  <span className="text-lg font-black">{t('CARD')}</span>
                   <span className="mt-1 text-xs font-semibold text-slate-300">
                     {isCheckoutLoading && paymentMethod === 'CARD'
-                      ? 'Processing...'
+                      ? t('Processing...')
                       : 'Tap or insert card'}
                   </span>
                 </button>

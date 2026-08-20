@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { currentStoreChangedEvent } from '@/lib/store-events';
+import { useI18n } from '@/components/i18n/provider';
 
 type Product = {
   id: string;
@@ -23,6 +24,7 @@ type RestockProduct = Product & {
 };
 
 export default function StockPage() {
+  const { t } = useI18n();
   const searchParams = useSearchParams();
   const highlightedProductId = searchParams.get('productId');
   const [products, setProducts] = useState<RestockProduct[]>([]);
@@ -168,10 +170,10 @@ export default function StockPage() {
           <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
             <div>
               <p className="mb-1 text-xs font-bold uppercase tracking-[0.2em] text-[#4f6b65]">
-                Store operations
+                {t('Store operations')}
               </p>
               <h1 className="text-3xl font-black tracking-tight text-[#0c1b2a] sm:text-4xl">
-                Inventory
+                {t('Inventory')}
               </h1>
             </div>
             <span className="text-sm font-semibold text-[#5f746d]">
@@ -193,11 +195,11 @@ export default function StockPage() {
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {isLoading ? (
               <p className="col-span-full py-10 text-center text-sm font-semibold text-[#5f746d]">
-                Loading inventory...
+                {t('Loading inventory...')}
               </p>
             ) : sortedProducts.length === 0 ? (
               <p className="col-span-full py-10 text-center text-sm font-semibold text-[#5f746d]">
-                No products found.
+                {t('No products found.')}
               </p>
             ) : (
               sortedProducts.map((product) => (
@@ -243,7 +245,7 @@ export default function StockPage() {
                       onClick={() => openRestock(product)}
                       className="rounded-lg bg-[#0c1b2a] px-3 py-2 text-xs font-black text-white transition hover:bg-[#1c354c] active:scale-[0.98]"
                     >
-                      Add stock
+                      {t('Add stock')}
                     </button>
                   </div>
                 </article>

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { currentStoreChangedEvent } from '@/lib/store-events';
+import { useI18n } from '@/components/i18n/provider';
 
 type SaleItem = {
   quantity: number;
@@ -38,6 +39,7 @@ function formatDate(value: string) {
 }
 
 export default function SalesPage() {
+  const { t } = useI18n();
   const [sales, setSales] = useState<Sale[]>([]);
   const [search, setSearch] = useState('');
   const [paymentFilter, setPaymentFilter] = useState<'ALL' | 'CASH' | 'CARD'>('ALL');
@@ -109,10 +111,10 @@ export default function SalesPage() {
           <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
             <div>
               <p className="mb-1 text-xs font-bold uppercase tracking-[0.2em] text-[#4f6b65]">
-                Completed transactions
+                {t('Completed transactions')}
               </p>
               <h1 className="text-3xl font-black tracking-tight text-[#0c1b2a] sm:text-4xl">
-                Sales
+                {t('Sales')}
               </h1>
             </div>
             <span className="text-sm font-semibold text-[#5f746d]">
@@ -126,7 +128,7 @@ export default function SalesPage() {
               id="sales-search"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search by sale ID or product"
+              placeholder={t('Search by sale ID or product')}
               className="h-12 min-w-0 flex-1 rounded-xl border-2 border-[#d6e0d9] bg-white px-4 text-sm font-semibold text-[#0c1b2a] outline-none focus:border-[#8caa4d]"
             />
             <label htmlFor="payment-filter" className="sr-only">Filter payment method</label>
@@ -136,7 +138,7 @@ export default function SalesPage() {
               onChange={(event) => setPaymentFilter(event.target.value as typeof paymentFilter)}
               className="h-12 rounded-xl border-2 border-[#d6e0d9] bg-white px-4 text-sm font-bold text-[#0c1b2a] outline-none focus:border-[#8caa4d]"
             >
-              <option value="ALL">All payments</option>
+              <option value="ALL">{t('All payments')}</option>
               <option value="CASH">CASH</option>
               <option value="CARD">CARD</option>
             </select>
@@ -150,11 +152,11 @@ export default function SalesPage() {
 
           {isLoading ? (
             <p className="rounded-xl border border-dashed border-[#b8c9bd] px-4 py-12 text-center text-sm font-semibold text-[#5f746d]">
-              Loading sales...
+              {t('Loading sales...')}
             </p>
           ) : filteredSales.length === 0 ? (
             <p className="rounded-xl border border-dashed border-[#b8c9bd] px-4 py-12 text-center text-sm font-semibold text-[#5f746d]">
-              {sales.length === 0 ? 'No completed sales yet.' : 'No sales match your filters.'}
+              {sales.length === 0 ? t('No completed sales yet.') : t('No sales match your filters.')}
             </p>
           ) : (
             <div className="grid gap-3">
