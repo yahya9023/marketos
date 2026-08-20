@@ -4,6 +4,7 @@ import { randomUUID } from 'crypto';
 import { mkdir, writeFile } from 'fs/promises';
 import path from 'path';
 import { NextResponse } from 'next/server';
+import { authorizeApiRequest } from '@/lib/authorization';
 
 const maxFileSize = 5 * 1024 * 1024;
 const allowedTypes = new Map([
@@ -14,6 +15,9 @@ const allowedTypes = new Map([
 ]);
 
 export async function POST(request: Request) {
+  const authorization = await authorizeApiRequest(['OWNER', 'MANAGER']);
+  if (authorization instanceof NextResponse) return authorization;
+
   const formData = await request.formData();
   const file = formData.get('file');
 

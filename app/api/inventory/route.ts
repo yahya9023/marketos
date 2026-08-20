@@ -1,6 +1,7 @@
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Prisma, PrismaClient } from '@prisma/client';
 import { NextResponse } from 'next/server';
+import { authorizeApiRequest } from '@/lib/authorization';
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
@@ -75,6 +76,9 @@ async function parseRequestBody(request: Request) {
 }
 
 export async function GET() {
+  const authorization = await authorizeApiRequest(['OWNER', 'MANAGER', 'CASHIER']);
+  if (authorization instanceof NextResponse) return authorization;
+
   try {
     const store = await findCurrentStore();
 
@@ -101,6 +105,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const authorization = await authorizeApiRequest(['OWNER', 'MANAGER']);
+  if (authorization instanceof NextResponse) return authorization;
+
   const input = getInventoryInput(await parseRequestBody(request));
 
   if ('error' in input) {
@@ -175,6 +182,9 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
+  const authorization = await authorizeApiRequest(['OWNER', 'MANAGER']);
+  if (authorization instanceof NextResponse) return authorization;
+
   const input = getInventoryInput(await parseRequestBody(request));
 
   if ('error' in input) {

@@ -1,6 +1,7 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { NextResponse } from 'next/server';
+import { authorizeApiRequest } from '@/lib/authorization';
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
@@ -51,6 +52,9 @@ export async function PATCH(
   request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
+  const authorization = await authorizeApiRequest(['OWNER', 'MANAGER']);
+  if (authorization instanceof NextResponse) return authorization;
+
   const { id } = await context.params;
   let body: unknown;
 

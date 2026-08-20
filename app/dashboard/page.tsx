@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
+import { LogoutButton } from '@/components/auth/logout-button';
 
 type SaleItem = {
   quantity: number;
@@ -133,6 +134,7 @@ export default function DashboardPage() {
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
+            <LogoutButton />
             <Link href="/sales" className="rounded-lg border border-white/20 bg-white/5 px-4 py-3 text-sm font-bold text-white hover:bg-white/10">
               Sales
             </Link>

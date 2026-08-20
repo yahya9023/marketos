@@ -36,15 +36,17 @@ model Store {
 }
 
 model Employee {
-  id        String   @id @default(cuid())
-  name      String
-  email     String
-  role      String
-  storeId   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  store     Store    @relation(fields: [storeId], references: [id])
-  sales     Sale[]
+  id           String   @id @default(cuid())
+  name         String
+  email        String
+  role         String
+  passwordHash String?
+  active       Boolean  @default(true)
+  storeId      String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  store        Store    @relation(fields: [storeId], references: [id])
+  sales        Sale[]
 
   @@index([storeId])
 }

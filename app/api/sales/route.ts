@@ -1,6 +1,7 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { NextResponse } from 'next/server';
+import { authorizeApiRequest } from '@/lib/authorization';
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
@@ -54,6 +55,9 @@ const salesHistorySelect = {
 } as const;
 
 export async function GET() {
+  const authorization = await authorizeApiRequest(['OWNER', 'MANAGER']);
+  if (authorization instanceof NextResponse) return authorization;
+
   try {
     const store = await prisma.store.findFirst({
       orderBy: { createdAt: 'asc' },
@@ -122,6 +126,9 @@ function parseSaleItems(items: unknown) {
 }
 
 export async function POST(request: Request) {
+  const authorization = await authorizeApiRequest(['OWNER', 'MANAGER', 'CASHIER']);
+  if (authorization instanceof NextResponse) return authorization;
+
   let body: unknown;
 
   try {
