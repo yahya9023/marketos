@@ -1,0 +1,138 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+}
+
+enum SaleStatus {
+  COMPLETED
+  CANCELLED
+  REFUNDED
+}
+
+enum StockMovementType {
+  IN
+  OUT
+  ADJUSTMENT
+}
+
+model Store {
+  id             String          @id @default(cuid())
+  name           String
+  address        String
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  employees      Employee[]
+  sales          Sale[]
+  stockMovements StockMovement[]
+  inventory      Inventory[]
+}
+
+model Employee {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  role      String
+  storeId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  store     Store    @relation(fields: [storeId], references: [id])
+  sales     Sale[]
+
+  @@index([storeId])
+}
+
+model Category {
+  id        String    @id @default(cuid())
+  name      String
+  createdAt DateTime  @default(now())
+  products  Product[]
+}
+
+model Product {
+  id             String          @id @default(cuid())
+  barcode        String          @unique
+  name           String
+  categoryId     String
+  price          Decimal         @db.Decimal(10, 2)
+  vatRate        Decimal         @db.Decimal(5, 2)
+  unit           String
+  imageUrl       String?
+  active         Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  category       Category        @relation(fields: [categoryId], references: [id])
+  saleItems      SaleItem[]
+  stockMovements StockMovement[]
+  inventory      Inventory[]
+
+  @@index([categoryId])
+}
+
+model Sale {
+  id            String        @id @default(cuid())
+  storeId       String
+  employeeId    String
+  subtotal      Decimal       @db.Decimal(10, 2)
+  vat           Decimal       @db.Decimal(10, 2)
+  total         Decimal       @db.Decimal(10, 2)
+  paymentMethod PaymentMethod
+  status        SaleStatus
+  createdAt     DateTime      @default(now())
+  store         Store         @relation(fields: [storeId], references: [id])
+  employee      Employee      @relation(fields: [employeeId], references: [id])
+  items         SaleItem[]
+
+  @@index([storeId])
+  @@index([employeeId])
+  @@index([createdAt])
+}
+
+model SaleItem {
+  id        String  @id @default(cuid())
+  saleId    String
+  productId String
+  quantity  Int
+  unitPrice Decimal @db.Decimal(10, 2)
+  total     Decimal @db.Decimal(10, 2)
+  sale      Sale    @relation(fields: [saleId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@index([saleId])
+  @@index([productId])
+}
+
+model StockMovement {
+  id        String            @id @default(cuid())
+  productId String
+  storeId   String
+  quantity  Int
+  type      StockMovementType
+  reason    String
+  createdAt DateTime          @default(now())
+  product   Product           @relation(fields: [productId], references: [id])
+  store     Store             @relation(fields: [storeId], references: [id])
+
+  @@index([productId])
+  @@index([storeId])
+}
+
+model Inventory {
+  id        String   @id @default(cuid())
+  storeId   String
+  productId String
+  quantity  Int
+  updatedAt DateTime @updatedAt
+  store     Store    @relation(fields: [storeId], references: [id])
+  product   Product  @relation(fields: [productId], references: [id])
+
+  @@unique([storeId, productId])
+  @@index([productId])
+}
