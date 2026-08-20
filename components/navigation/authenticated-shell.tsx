@@ -12,6 +12,7 @@ const links = [
   { href: '/sales', label: 'Sales', roles: ['OWNER', 'MANAGER'] },
   { href: '/employees', label: 'Employees', roles: ['OWNER'] },
   { href: '/settings/stores', label: 'Stores', roles: ['OWNER'] },
+  { href: '/settings/categories', label: 'Categories', roles: ['OWNER'] },
 ] as const;
 
 export async function AuthenticatedShell({ children }: { children: React.ReactNode }) {

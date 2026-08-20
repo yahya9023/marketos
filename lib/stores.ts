@@ -9,29 +9,32 @@ export type AccessibleStore = {
   name: string;
   address: string;
   active: boolean;
+  ownerId: string;
 };
 
 export async function getAccessibleStores(employee: {
+  id: string;
   role: UserRole;
   storeId: string;
 }) {
   if (employee.role === 'OWNER') {
     return prisma.store.findMany({
-      where: { active: true },
-      select: { id: true, name: true, address: true, active: true },
+      where: { ownerId: employee.id, active: true },
+      select: { id: true, name: true, address: true, active: true, ownerId: true },
       orderBy: { createdAt: 'asc' },
     });
   }
 
   const store = await prisma.store.findFirst({
     where: { id: employee.storeId, active: true },
-    select: { id: true, name: true, address: true, active: true },
+    select: { id: true, name: true, address: true, active: true, ownerId: true },
   });
 
   return store ? [store] : [];
 }
 
 export async function getCurrentStoreContext(employee: {
+  id: string;
   role: UserRole;
   storeId: string;
 }) {
@@ -52,6 +55,7 @@ export async function getCurrentStoreContext(employee: {
 }
 
 export async function getCurrentStoreForEmployee(employee: {
+  id: string;
   role: UserRole;
   storeId: string;
 }) {

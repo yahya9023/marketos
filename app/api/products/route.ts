@@ -23,7 +23,7 @@ const productSelect = {
   barcode: true,
   name: true,
   categoryId: true,
-  storeId: true,
+  ownerId: true,
   price: true,
   vatRate: true,
   unit: true,
@@ -36,6 +36,9 @@ const productSelect = {
       id: true,
       name: true,
     },
+  },
+  storeProducts: {
+    select: { storeId: true, active: true },
   },
 } as const;
 
@@ -60,7 +63,8 @@ export async function GET(request: Request) {
       const product = await prisma.product.findFirst({
         where: {
           barcode,
-          storeId: authorization.store.id,
+          ownerId: authorization.store.ownerId,
+          storeProducts: { some: { storeId: authorization.store.id, active: true } },
           active: true,
         },
         select: productSelect,
@@ -76,8 +80,15 @@ export async function GET(request: Request) {
       return NextResponse.json(product);
     }
 
+    const catalog = new URL(request.url).searchParams.get('catalog');
     const products = await prisma.product.findMany({
-      where: { storeId: authorization.store.id, active: true },
+      where: {
+        ownerId: authorization.store.ownerId,
+        active: true,
+        ...(catalog === 'all'
+          ? {}
+          : { storeProducts: { some: { storeId: authorization.store.id, active: true } } }),
+      },
       select: productSelect,
       orderBy: { name: 'asc' },
     });
@@ -183,9 +194,10 @@ export async function POST(request: Request) {
   try {
     const category = await prisma.category.findUnique({
       where: { id: categoryId.trim() },
+      select: { id: true, active: true },
     });
 
-    if (!category) {
+    if (!category || !category.active) {
       return NextResponse.json(
         { error: 'Category not found' },
         { status: 404 },
@@ -198,18 +210,19 @@ export async function POST(request: Request) {
           barcode: barcode.trim(),
           name: name.trim(),
           categoryId: category.id,
-          storeId: authorization.store.id,
+          ownerId: authorization.store.ownerId,
           price,
           vatRate,
           unit: unit.trim(),
           imageUrl,
           active: true,
-          inventory: {
+          storeProducts: {
             create: {
-              store: { connect: { id: authorization.store.id } },
-              quantity: initialStock as number,
+              storeId: authorization.store.id,
+              active: true,
             },
           },
+          inventory: { create: { storeId: authorization.store.id, quantity: initialStock as number } },
         },
         select: productSelect,
       }),

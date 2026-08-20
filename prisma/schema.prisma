@@ -34,21 +34,27 @@ model Store {
   sales          Sale[]
   stockMovements StockMovement[]
   inventory      Inventory[]
-  products       Product[]
+  products       StoreProduct[]
+  ownerId        String
+  owner          Employee        @relation("StoreOwner", fields: [ownerId], references: [id])
+
+  @@index([ownerId])
 }
 
 model Employee {
-  id           String   @id @default(cuid())
+  id           String    @id @default(cuid())
   name         String
   email        String
   role         String
   passwordHash String?
-  active       Boolean  @default(true)
+  active       Boolean   @default(true)
   storeId      String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  store        Store    @relation(fields: [storeId], references: [id])
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  store        Store     @relation(fields: [storeId], references: [id])
   sales        Sale[]
+  ownedStores  Store[]   @relation("StoreOwner")
+  products     Product[]
 
   @@index([storeId])
 }
@@ -56,16 +62,17 @@ model Employee {
 model Category {
   id        String    @id @default(cuid())
   name      String
+  active    Boolean   @default(true)
   createdAt DateTime  @default(now())
   products  Product[]
 }
 
 model Product {
   id             String          @id @default(cuid())
-  barcode        String
+  barcode        String          @unique
   name           String
   categoryId     String
-  storeId        String
+  ownerId        String
   price          Decimal         @db.Decimal(10, 2)
   vatRate        Decimal         @db.Decimal(5, 2)
   unit           String
@@ -74,13 +81,28 @@ model Product {
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   category       Category        @relation(fields: [categoryId], references: [id])
-  store          Store           @relation(fields: [storeId], references: [id])
+  owner          Employee        @relation(fields: [ownerId], references: [id])
+  storeProducts  StoreProduct[]
   saleItems      SaleItem[]
   stockMovements StockMovement[]
   inventory      Inventory[]
 
-  @@unique([storeId, barcode])
   @@index([categoryId])
+  @@index([ownerId])
+}
+
+model StoreProduct {
+  id        String   @id @default(cuid())
+  storeId   String
+  productId String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  store     Store    @relation(fields: [storeId], references: [id])
+  product   Product  @relation(fields: [productId], references: [id])
+
+  @@unique([storeId, productId])
+  @@index([productId])
   @@index([storeId])
 }
 

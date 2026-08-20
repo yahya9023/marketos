@@ -71,16 +71,27 @@ export async function PATCH(
       const [currentEmployee, duplicateEmployee, store] = await Promise.all([
         transaction.employee.findUnique({
           where: { id },
-          select: { id: true, role: true, active: true },
+          select: {
+            id: true,
+            role: true,
+            active: true,
+            store: { select: { ownerId: true } },
+          },
         }),
         transaction.employee.findFirst({
           where: { email: { equals: email, mode: 'insensitive' }, NOT: { id } },
           select: { id: true },
         }),
-        transaction.store.findUnique({ where: { id: storeId }, select: { id: true } }),
+        transaction.store.findFirst({
+          where: { id: storeId, ownerId: authorization.id, active: true },
+          select: { id: true },
+        }),
       ]);
 
       if (!currentEmployee) throw new Error('Employee not found');
+      if (currentEmployee.store.ownerId !== authorization.id) {
+        throw new Error('Employee is not accessible');
+      }
       if (duplicateEmployee) throw new Error('An employee with that email already exists');
       if (!store) throw new Error('Store not found');
 
@@ -114,9 +125,10 @@ export async function PATCH(
 
     return NextResponse.json(employee);
   } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unable to update employee';
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unable to update employee' },
-      { status: 400 },
+      { error: message },
+      { status: message === 'Employee not found' || message === 'Employee is not accessible' || message === 'Store not found' ? 404 : 400 },
     );
   }
 }

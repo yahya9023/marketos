@@ -76,7 +76,7 @@ export async function GET() {
     const inventory = await prisma.inventory.findMany({
       where: {
         storeId: authorization.store.id,
-        product: { storeId: authorization.store.id },
+        product: { storeProducts: { some: { storeId: authorization.store.id, active: true } } },
       },
       select: inventorySelect,
       orderBy: { product: { name: 'asc' } },
@@ -105,7 +105,7 @@ export async function POST(request: Request) {
     const product = await prisma.product.findFirst({
       where: {
         id: input.productId,
-        storeId: authorization.store.id,
+        storeProducts: { some: { storeId: authorization.store.id, active: true } },
         active: true,
       },
       select: { id: true },

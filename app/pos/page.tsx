@@ -12,7 +12,7 @@ type Product = {
   vatRate: number;
   unit: string;
   imageUrl: string | null;
-  availableStock: number;
+  databaseStock: number;
   tone: string;
 };
 
@@ -94,7 +94,7 @@ export default function PosPage() {
               vatRate: Number(product.vatRate),
               unit: product.unit,
               imageUrl: product.imageUrl,
-              availableStock: stockByProductId.get(product.id) ?? 0,
+              databaseStock: stockByProductId.get(product.id) ?? 0,
               tone: productTones[index % productTones.length],
             })),
           );
@@ -140,8 +140,8 @@ export default function PosPage() {
   const itemCount = cart.reduce((total, item) => total + item.quantity, 0);
 
   function addProduct(product: Product) {
-    if (product.availableStock < 1) {
-      setNotice(`${product.name} is out of stock`);
+    if (product.databaseStock < 1) {
+      setNotice('This product is out of stock.');
       return;
     }
 
@@ -151,7 +151,7 @@ export default function PosPage() {
       );
 
       if (existingItem) {
-        if (existingItem.quantity >= existingItem.availableStock) {
+        if (existingItem.quantity >= existingItem.databaseStock) {
           return currentCart;
         }
         return currentCart.map((item) =>
@@ -201,7 +201,7 @@ export default function PosPage() {
             ? {
                 ...item,
                 quantity: Math.min(
-                  item.availableStock,
+                  item.databaseStock,
                   Math.max(1, item.quantity + amount),
                 ),
               }
@@ -221,7 +221,7 @@ export default function PosPage() {
     setCart((currentCart) =>
       currentCart.map((item) =>
         item.barcode === barcodeValue
-          ? { ...item, quantity: Math.min(quantity, item.availableStock) }
+          ? { ...item, quantity: Math.min(quantity, item.databaseStock) }
           : item,
       ),
     );
@@ -306,7 +306,7 @@ export default function PosPage() {
           vatRate: Number(product.vatRate),
           unit: product.unit,
           imageUrl: product.imageUrl,
-          availableStock: stockByProductId.get(product.id) ?? 0,
+          databaseStock: stockByProductId.get(product.id) ?? 0,
           tone: productTones[index % productTones.length],
         })),
       );
@@ -416,7 +416,9 @@ export default function PosPage() {
                     key={product.barcode}
                     type="button"
                     onClick={() => addProduct(product)}
-                    className="group min-h-0 min-w-0 max-w-full rounded-xl border border-[#dce5df] bg-white p-2 text-left transition hover:-translate-y-0.5 hover:border-[#9eb65b] hover:shadow-lg active:translate-y-0 lg:p-4"
+                    disabled={product.databaseStock < 1}
+                    aria-label={product.databaseStock < 1 ? `${product.name}, out of stock` : `Add ${product.name}`}
+                    className={`group min-h-0 min-w-0 max-w-full rounded-xl border p-2 text-left transition lg:p-4 ${product.databaseStock < 1 ? 'cursor-not-allowed border-rose-200 bg-rose-50/70 opacity-80' : 'border-[#dce5df] bg-white hover:-translate-y-0.5 hover:border-[#9eb65b] hover:shadow-lg active:translate-y-0'}`}
                   >
                     <span
                       className={`mb-2 flex h-20 w-full items-center justify-center overflow-hidden rounded-lg text-4xl font-black lg:mb-4 lg:h-36 ${product.tone}`}
@@ -437,7 +439,10 @@ export default function PosPage() {
                     <span className="mt-1 block text-xs text-slate-500">
                       {product.unit}
                     </span>
-                    <span className="mt-2 block text-base font-black text-[#346154] lg:mt-3">
+                    <span className={`mt-2 inline-flex rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-[0.08em] lg:mt-3 ${product.databaseStock < 1 ? 'bg-rose-100 text-rose-700' : 'bg-[#e4eee7] text-[#346154]'}`}>
+                      {product.databaseStock < 1 ? 'OUT OF STOCK' : `Stock: ${product.databaseStock}`}
+                    </span>
+                    <span className="mt-2 block text-base font-black text-[#346154]">
                       {currency.format(product.price)}
                     </span>
                   </button>
@@ -497,8 +502,8 @@ export default function PosPage() {
                         <p className="mt-1 text-xs text-slate-500">
                           {currency.format(item.price)} / {item.unit}
                         </p>
-                        <p className="mt-1 text-xs font-semibold text-[#346154]">
-                          Available stock: {item.availableStock}
+                        <p className={`mt-1 text-xs font-semibold ${item.databaseStock - item.quantity === 0 ? 'text-rose-600' : 'text-[#346154]'}`}>
+                          Available stock: {item.databaseStock - item.quantity}
                         </p>
                         <button
                           type="button"
@@ -520,7 +525,7 @@ export default function PosPage() {
                         <input
                           type="number"
                           min="1"
-                          max={item.availableStock}
+                          max={item.databaseStock}
                           value={item.quantity}
                           aria-label={`${item.name} quantity`}
                           onChange={(event) =>

@@ -23,7 +23,7 @@ const productSelect = {
   barcode: true,
   name: true,
   categoryId: true,
-  storeId: true,
+  ownerId: true,
   price: true,
   vatRate: true,
   unit: true,
@@ -36,6 +36,9 @@ const productSelect = {
       id: true,
       name: true,
     },
+  },
+  storeProducts: {
+    select: { storeId: true, active: true },
   },
 } as const;
 
@@ -134,10 +137,10 @@ export async function PATCH(
   try {
     const category = await prisma.category.findUnique({
       where: { id: categoryId.trim() },
-      select: { id: true },
+      select: { id: true, active: true },
     });
 
-    if (!category) {
+    if (!category || !category.active) {
       return NextResponse.json(
         { error: 'Category not found' },
         { status: 404 },
@@ -145,7 +148,11 @@ export async function PATCH(
     }
 
     const existingProduct = await prisma.product.findFirst({
-      where: { id, storeId: authorization.store.id },
+      where: {
+        id,
+        ownerId: authorization.store.ownerId,
+        storeProducts: { some: { storeId: authorization.store.id, active: true } },
+      },
       select: { id: true },
     });
 

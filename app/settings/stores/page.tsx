@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 type Store = {
   id: string;
@@ -24,6 +25,7 @@ function formatDate(value: string) {
 }
 
 export default function StoreManagementPage() {
+  const router = useRouter();
   const [stores, setStores] = useState<Store[]>([]);
   const [form, setForm] = useState<StoreForm>(emptyForm);
   const [editingStore, setEditingStore] = useState<Store | null>(null);
@@ -106,6 +108,7 @@ export default function StoreManagementPage() {
       setIsModalOpen(false);
       setSuccessMessage(editingStore ? 'Store updated successfully.' : 'Store created successfully.');
       await loadStores();
+      router.refresh();
     } catch (error) {
       setFormError(error instanceof Error ? error.message : 'Unable to save store');
     } finally {

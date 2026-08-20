@@ -84,7 +84,7 @@ export async function POST(request: Request) {
     const product = await prisma.product.findFirst({
       where: {
         id: productId.trim(),
-        storeId: authorization.store.id,
+        storeProducts: { some: { storeId: authorization.store.id, active: true } },
         active: true,
       },
       select: { id: true },

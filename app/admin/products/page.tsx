@@ -14,6 +14,7 @@ type Product = {
   unit: string;
   imageUrl: string | null;
   active: boolean;
+  storeProducts: { storeId: string; active: boolean }[];
 };
 
 type Category = {
@@ -63,6 +64,7 @@ export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [inventory, setInventory] = useState<InventoryRecord[]>([]);
+  const [currentStoreId, setCurrentStoreId] = useState('');
   const [search, setSearch] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -80,11 +82,12 @@ export default function AdminProductsPage() {
     setLoadError('');
 
     try {
-      const [productsResponse, categoriesResponse, inventoryResponse] =
+      const [productsResponse, categoriesResponse, inventoryResponse, storeResponse] =
         await Promise.all([
-          fetch('/api/products'),
+          fetch('/api/products?catalog=all'),
           fetch('/api/categories'),
           fetch('/api/inventory'),
+          fetch('/api/store'),
         ]);
 
       if (!productsResponse.ok) {
@@ -99,10 +102,14 @@ export default function AdminProductsPage() {
       const inventoryData: InventoryRecord[] = inventoryResponse.ok
         ? await inventoryResponse.json()
         : [];
+      const storeData: { currentStoreId?: string } = storeResponse.ok
+        ? await storeResponse.json()
+        : {};
 
       setProducts(productsData);
       setCategories(categoriesData);
       setInventory(inventoryData);
+      setCurrentStoreId(storeData.currentStoreId ?? '');
     } catch (error) {
       setLoadError(
         error instanceof Error ? error.message : 'Unable to load products',
@@ -139,6 +146,22 @@ export default function AdminProductsPage() {
 
   function updateForm(field: keyof ProductForm, value: string) {
     setForm((current) => ({ ...current, [field]: value }));
+  }
+
+  async function assignToCurrentStore(product: Product) {
+    setSuccessMessage('');
+    const response = await fetch('/api/store-products', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ productId: product.id }),
+    });
+    const result: { error?: string } = await response.json();
+    if (!response.ok) {
+      setLoadError(result.error ?? 'Unable to assign product');
+      return;
+    }
+    setSuccessMessage(`${product.name} assigned to the current store.`);
+    await loadData();
   }
 
   function openModal() {
@@ -379,6 +402,7 @@ export default function AdminProductsPage() {
                   <th className="px-4 py-3">VAT</th>
                   <th className="px-4 py-3">Unit</th>
                   <th className="px-4 py-3">Stock</th>
+                  <th className="px-4 py-3">Store</th>
                   <th className="px-4 py-3">Status</th>
                   <th className="px-4 py-3">Actions</th>
                 </tr>
@@ -386,13 +410,13 @@ export default function AdminProductsPage() {
               <tbody className="divide-y divide-[#edf1ed]">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={9} className="px-4 py-10 text-center font-semibold text-[#5f746d]">
+                    <td colSpan={10} className="px-4 py-10 text-center font-semibold text-[#5f746d]">
                       Loading products...
                     </td>
                   </tr>
                 ) : filteredProducts.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="px-4 py-10 text-center font-semibold text-[#5f746d]">
+                    <td colSpan={10} className="px-4 py-10 text-center font-semibold text-[#5f746d]">
                       No products found.
                     </td>
                   </tr>
@@ -421,6 +445,13 @@ export default function AdminProductsPage() {
                       <td className="px-4 py-3 text-slate-600">{product.vatRate}%</td>
                       <td className="px-4 py-3 text-slate-600">{product.unit}</td>
                       <td className="px-4 py-3 font-bold text-[#0c1b2a]">{inventoryByProductId.get(product.id) ?? '—'}</td>
+                      <td className="px-4 py-3">
+                        {product.storeProducts.some((assignment) => assignment.storeId === currentStoreId && assignment.active) ? (
+                          <span className="rounded-full bg-[#e4eee7] px-2.5 py-1 text-xs font-bold text-[#346154]">Assigned</span>
+                        ) : (
+                          <button type="button" onClick={() => void assignToCurrentStore(product)} className="rounded-lg bg-[#0c1b2a] px-3 py-2 text-xs font-bold text-white">Add to store</button>
+                        )}
+                      </td>
                       <td className="px-4 py-3">
                         <span className="rounded-full bg-[#e4eee7] px-2.5 py-1 text-xs font-bold text-[#346154]">
                           {product.active ? 'Active' : 'Inactive'}

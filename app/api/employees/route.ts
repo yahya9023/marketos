@@ -37,10 +37,12 @@ export async function GET() {
   try {
     const [employees, stores] = await Promise.all([
       prisma.employee.findMany({
+        where: { store: { ownerId: authorization.id } },
         select: employeeSelect,
         orderBy: { createdAt: 'asc' },
       }),
       prisma.store.findMany({
+        where: { ownerId: authorization.id, active: true },
         select: { id: true, name: true, address: true },
         orderBy: { createdAt: 'asc' },
       }),
@@ -94,7 +96,10 @@ export async function POST(request: Request) {
           where: { email: { equals: email, mode: 'insensitive' } },
           select: { id: true },
         }),
-        transaction.store.findUnique({ where: { id: storeId }, select: { id: true } }),
+        transaction.store.findFirst({
+          where: { id: storeId, ownerId: authorization.id, active: true },
+          select: { id: true },
+        }),
       ]);
 
       if (existingEmployee) throw new Error('An employee with that email already exists');
@@ -115,9 +120,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json(employee, { status: 201 });
   } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unable to create employee';
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unable to create employee' },
-      { status: 400 },
+      { error: message },
+      { status: message === 'Store not found' ? 404 : 400 },
     );
   }
 }

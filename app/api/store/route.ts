@@ -24,6 +24,7 @@ const storeSelect = {
   name: true,
   address: true,
   active: true,
+  ownerId: true,
   createdAt: true,
   updatedAt: true,
 } as const;
@@ -40,6 +41,7 @@ export async function GET() {
     const { store, stores: activeStores } = await getCurrentStoreContext(authorization);
     const stores = authorization.role === 'OWNER'
       ? await prisma.store.findMany({
+          where: { ownerId: authorization.id },
           select: storeSelect,
           orderBy: { createdAt: 'asc' },
         })
@@ -131,6 +133,7 @@ export async function POST(request: Request) {
         name: name.trim(),
         address: address.trim(),
         active: true,
+        ownerId: authorization.id,
       },
       select: storeSelect,
     });

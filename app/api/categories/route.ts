@@ -18,12 +18,14 @@ if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const authorization = await authorizeApiRequest(['OWNER', 'MANAGER', 'CASHIER']);
   if (authorization instanceof NextResponse) return authorization;
 
   try {
+    const includeInactive = new URL(request.url).searchParams.get('includeInactive') === 'true';
     const categories = await prisma.category.findMany({
+      ...(includeInactive && authorization.role === 'OWNER' ? {} : { where: { active: true } }),
       orderBy: { name: 'asc' },
     });
 
@@ -37,7 +39,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const authorization = await authorizeApiRequest(['OWNER', 'MANAGER']);
+  const authorization = await authorizeApiRequest(['OWNER']);
   if (authorization instanceof NextResponse) return authorization;
 
   let body: unknown;

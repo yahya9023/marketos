@@ -16,6 +16,7 @@ const storeSelect = {
   name: true,
   address: true,
   active: true,
+  ownerId: true,
   createdAt: true,
   updatedAt: true,
 } as const;
@@ -55,7 +56,10 @@ export async function PATCH(
   try {
     const store = await prisma.$transaction(async (transaction) => {
       const [currentStore, duplicateStore] = await Promise.all([
-        transaction.store.findUnique({ where: { id }, select: { id: true, active: true } }),
+        transaction.store.findFirst({
+          where: { id, ownerId: authorization.id },
+          select: { id: true, active: true },
+        }),
         transaction.store.findFirst({
           where: { name: { equals: name, mode: 'insensitive' }, NOT: { id } },
           select: { id: true },
@@ -66,7 +70,9 @@ export async function PATCH(
       if (duplicateStore) throw new Error('A store with that name already exists');
 
       if (currentStore.active && !active) {
-        const activeStoreCount = await transaction.store.count({ where: { active: true } });
+        const activeStoreCount = await transaction.store.count({
+          where: { active: true, ownerId: authorization.id },
+        });
         if (activeStoreCount <= 1) throw new Error('At least one active store must remain.');
       }
 
@@ -83,9 +89,10 @@ export async function PATCH(
       return NextResponse.json({ error: 'Store not found' }, { status: 404 });
     }
 
+    const message = error instanceof Error ? error.message : 'Unable to update store';
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unable to update store' },
-      { status: 400 },
+      { error: message },
+      { status: message === 'Store not found' ? 404 : 400 },
     );
   }
 }
